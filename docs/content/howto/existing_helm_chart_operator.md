@@ -44,7 +44,7 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 
 This now means you can reference the chart with the alias `bitnami/wordpress`.
 
-3. [operator-sdk v1.3.2](https://github.com/operator-framework/operator-sdk/releases/tag/v1.3.2). The commands are correct for this version of the Operator SDK. The comands may change in different major/minor releases.
+3. [operator-sdk v1.3.2](https://github.com/operator-framework/operator-sdk/releases/tag/v1.3.2). The commands are correct for this version of the Operator SDK. The commands may change in different major/minor releases.
 
 ## Create the operator project
 
@@ -112,7 +112,7 @@ NAME                                    READY   UP-TO-DATE   AVAILABLE   AGE
 wordpress-operator-controller-manager   1/1     1            1           16m
 ```
 
-## Deploy Wordpress
+## Deploy WordPress
 
 1. Create demo WordPress Custom Resource (CR):
 
@@ -130,6 +130,13 @@ Update `name: wordpress-sample` to `name: wordpress-demo`
 - Change one of the values in the manifest to demonstrate that CR manifest exposes the chart values:
 Change `spec.wordpressBlogName` to `The Demo Blog!`. We will check this later when the server is running.
 
+- Some clusters may require the WordPress and MariaDB passwords to be set prior to install instead of being auto-generated during install. This practice also avoids having to get the generated passwords from the secrets when performing an upgrade. Set the passwords as follows for this example:
+  - `wordpressPassword: "Passw0rd!"`
+  - `mariadb.auth.rootPassword: "Passw0rd!"`
+  - `mariadb.auth.password: "Passw0rd!"`
+
+- If your cluster does not support the chart default `LoadBalancer` then you will need to set the `service.type` to `NodePort` or `ClusterIP`.
+
 2. Deploy WordPress:
 
 > Note: Verify the version of the bitnami container, the helm chart installs `5.6.1-debian-10-r8` and the newest release is: `5.6.1-debian-10-r9`
@@ -144,7 +151,7 @@ wordpress.helm-chart.example.com/wordpress-demo created
 
 > Note: You need to turn of validation (`--validate=false`) because the WordPress Helm chart uses null values for some defaults and this can cause the Kubernetes schema validation to fail. This should not be done in production systems.
 
-3. Verify that WordPress is running:
+3. Verify that WordPress is running (this may take a few mins. to come up):
 
 ```bash
 $ kubectl get pods -n wordpress-demo
@@ -181,6 +188,63 @@ wordpress-demo	wordpress-demo	1       	2021-02-12 18:30:19.542550642 +0000 UTC	d
 
 - Open a browser and access WordPress using the obtained URL. You should see the updated value of `THE DEMO BLOG!` on the page.
 
+## Upgrade WordPress
+
+1. Let's stops your WordPress web server `wordpress-demo`:
+
+- Set `replicaCount` to `0`
+
+- Upgrade `wordpress-demo` with the change:
+
+```bash
+$ kubectl apply -f config/samples/wordpress-demo.yaml -n wordpress-demo --validate=false
+wordpress.helm-chart.example.com/wordpress-demo configured
+```
+
+3. Verify that the upgrade was successful:
+
+- Initially you might see the WordPress server/pod terminating:
+
+```bash
+$ kubectl get pods -n wordpress-demo
+
+NAME                                  READY   STATUS        RESTARTS   AGE
+pod/wordpress-demo-58f5b7d699-2wlss   1/1     Terminating   0          17h
+pod/wordpress-demo-mariadb-0          1/1     Running       0          17h
+```
+
+- When finished, only the DB should remain:
+
+```bash
+$ kubectl get pods -n wordpress-demo
+
+NAME                       READY   STATUS    RESTARTS   AGE
+wordpress-demo-mariadb-0   1/1     Running   0          17h
+```
+
+4. Let's see if we can restart the WordPress server:
+
+- Set `replicaCount` to `1`
+
+- Upgrade `wordpress-demo` with the change:
+
+```bash
+$ kubectl apply -f config/samples/wordpress-demo.yaml -n wordpress-demo --validate=false
+wordpress.helm-chart.example.com/wordpress-demo configured
+```
+
+- Check that the server is back up and running (this may take a few mins. to come up):
+
+```bash
+$ kubectl get pods -n wordpress-demo
+
+NAME                              READY   STATUS    RESTARTS   AGE
+wordpress-demo-58f5b7d699-xj6g7   1/1     Running   0          118s
+wordpress-demo-mariadb-0          1/1     Running   0          18h
+```
+
+- You should be able to access the WordPress site again
+
 ## Clean up
 
 **WARNING:** This command will remove the WordPress deployment, the operator and all other resources created.
@@ -208,7 +272,7 @@ $ kubectl delete -n wordpress-demo --all
 persistentvolumeclaim "data-wordpress-demo-mariadb-0" deleted
 ```
 
-> Note: You first need to uninstall the release before removing the operator as the operator could be stopped before cleanup and can therefore hang the `undeploy` waiting. See [operator-sdk issue](https://github.com/operator-framework/operator-sdk/issues/4383) for more details. As a final step, you will need to cleanup the PersistentVolumeClaim (PVC) that was created when the chart was deployed. This is because Helm does not remove PVCs by design. See [Helm issue](https://github.com/helm/helm/issues/5156) for more details.
+> Note: You first need to uninstall the release before removing the operator as the operator could be stopped before clean-up and can therefore hang the `undeploy` waiting. See [operator-sdk issue](https://github.com/operator-framework/operator-sdk/issues/4383) for more details. As a final step, you will need to clean-up the PersistentVolumeClaim (PVC) that was created when the chart was deployed. This is because Helm does not remove PVCs by design. See [Helm issue](https://github.com/helm/helm/issues/5156) for more details.
 
 ## Debugging
 
@@ -218,7 +282,7 @@ persistentvolumeclaim "data-wordpress-demo-mariadb-0" deleted
 $ kubectl logs deployment.apps/wordpress-operator-controller-manager -n wordpress-operator-system -c manager
 ```
 
-- If you are deploying this example to an [IBM Kubernetes Service (IKS) cluster](https://www.ibm.com/cloud/kubernetes-service), you may need to run the following commands first in your Kubernetes cluster:
+- If your cluster uses file storage as default (for example [IBM Kubernetes Service (IKS) cluster](https://www.ibm.com/cloud/kubernetes-service)), you will need to run the following commands first in your cluster if you want to use the chart default block storage:
 
 > Note: Verify your `storageclass` with the following command: `kubectl get storageclass`. If your `(default)` is prefixed with `ibmc-file-`, change all names that apply via the commands below.
 
@@ -234,6 +298,8 @@ $ helm install 1.6.0 iks-charts/ibmcloud-block-storage-plugin -n kube-system
 $ kubectl patch storageclass ibmc-block-gold -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 $ kubectl patch storageclass ibmc-file-<name> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 ```
+
+> Note: You can alternatively set the chart to use file storage by setting `persistence.storageClass` to the cluster file storage name.
 
 - If you are on a Mac and using `homebrew`, and you see the following error when running the `make docker-build docker-push` command:
 
