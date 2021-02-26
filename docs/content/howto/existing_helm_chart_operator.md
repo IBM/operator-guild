@@ -10,7 +10,7 @@ The diagram below gives an conceptual view of how the Helm operator works:
 
 The [Operator SDK](https://sdk.operatorframework.io/docs/overview/) is an open source toolkit to help write operators and it will be used to create and deploy the operator in this `how to`. Any Helm chart can be used to create a Helm operator. For this we will use the [WordPress chart](https://github.com/bitnami/charts/tree/master/bitnami/wordpress) as the example.
 
-> Note: The operator will install the Helm chart using the [Helm Go SDK](https://helm.sh/docs/topics/advanced/#go-sdk). This means any configuration or set-up of the cluster needed to install the chart using Helm, would also be required by the operator. It would therefore be beneficial to install and uninstall it first using the Helm binary before starting with the operator to confirm it can be deployed in your cluster.
+> Note: The operator will install the Helm chart using the [Helm Go SDK](https://helm.sh/docs/topics/advanced/#go-sdk). This means any configuration or set-up of the cluster needed to install the chart using Helm, will also be required by the operator. It would therefore be beneficial to install and uninstall it first using the Helm binary before starting with the operator to confirm it can be deployed in your cluster. The WordPress chart needs permissions for resources like pods and storage. Refer to the [WordPress chart docs](https://github.com/bitnami/charts/tree/master/bitnami/wordpress) for more details.
 
 ## Prerequisites
 
@@ -114,6 +114,8 @@ wordpress-operator-controller-manager   1/1     1            1           16m
 
 ## Deploy WordPress
 
+> Note: It is worth checking out [Debugging](#debugging) prior to deploying. It contains information on issues and potential set-up depending on your cluster.
+
 1. Create demo WordPress Custom Resource (CR):
 
 > Note: This is equivalent to a [Helm values override file](https://helm.sh/docs/chart_template_guide/values_files/).
@@ -134,6 +136,9 @@ Change `spec.wordpressBlogName` to `The Demo Blog!`. We will check this later wh
   - `wordpressPassword: "Passw0rd!"`
   - `mariadb.auth.rootPassword: "Passw0rd!"`
   - `mariadb.auth.password: "Passw0rd!"`
+
+- WordPress uses the `default` ServiceAccount of the namespace (in this example `wordpress-demo`). It is defined by `serviceAccountName: default`. For this example we will also use the `default` ServiceAccount for MariaDB. This is configured by setting:
+  - `mariadb.serviceAccount.create: false`.
 
 - If your cluster does not support the chart default `LoadBalancer` then you will need to set the `service.type` to `NodePort` or `ClusterIP`.
 
@@ -282,7 +287,9 @@ persistentvolumeclaim "data-wordpress-demo-mariadb-0" deleted
 $ kubectl logs deployment.apps/wordpress-operator-controller-manager -n wordpress-operator-system -c manager
 ```
 
-- If your cluster uses file storage as default (for example [IBM Kubernetes Service (IKS) cluster](https://www.ibm.com/cloud/kubernetes-service)), you will need to run the following commands first in your cluster if you want to use the chart default block storage:
+- If your cluster uses file storage as default, you will need to change it to block storage as the chart uses block storage by default.
+
+The following commands show how to enable block storage for [IBM Kubernetes Service (IKS) cluster](https://www.ibm.com/cloud/kubernetes-service):
 
 > Note: Verify your `storageclass` with the following command: `kubectl get storageclass`. If your `(default)` is prefixed with `ibmc-file-`, change all names that apply via the commands below.
 
@@ -300,6 +307,19 @@ $ kubectl patch storageclass ibmc-file-<name> -p '{"metadata": {"annotations":{"
 ```
 
 > Note: You can alternatively set the chart to use file storage by setting `persistence.storageClass` to the cluster file storage name.
+
+- If your cluster uses additional security on top of vanilla Kubernetes, you may then need to perform some configuration prior to deploying the chart.
+
+For [RedHat OpenShift](https://www.openshift.com/), you will need to assign the `anyuid` [Security Context Constraint (SCC)](https://www.openshift.com/blog/managing-sccs-in-openshift) to the `default` ServiceAccount in the `wordpress-demo` namespace (or whatever ServiceAccount and namespace you use to deploy the chart). The command is as follows:
+
+```bash
+$ oc adm policy add-scc-to-user anyuid -z default -n wordpress-demo
+clusterrole.rbac.authorization.k8s.io/system:openshift:scc:anyuid added: "default"
+```
+
+> Note: As the chart also deploys MariaDB, if you configured it to use the `default` ServiceAccount (same as WordPress) then the above command provides permissions also for MariaDB. If it is a different ServiceAccount then in advance of deploying the chart: you need to create that ServiceAccount, set the `anyuid` SCC to it and set the name of the ServiceAccount to `mariadb.serviceAccount.name` in the CR/values file.
+
+> Note: You may want to use a more restrictive SCC by creating a custom SCC where you define the range for User ID (UID) and fsGroup etc. The IDs used by the chart are defined in the CR/values file. The alternative is the default `restrictive` SCC which uses dynamic ID ranges and the IDs  of the chart may not be in that range.
 
 - If you are on a Mac and using `homebrew`, and you see the following error when running the `make docker-build docker-push` command:
 
