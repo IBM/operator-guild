@@ -55,7 +55,7 @@ $ mkdir wordpress-operator
 
 $ cd wordpress-operator
 
-$ operator-sdk init --plugins helm --helm-chart bitnami/wordpress --domain example.com --group helm-chart --version v1 --kind Wordpress
+$ operator-sdk init --plugins helm --helm-chart bitnami/wordpress --domain example.com --group helm-chart --version v1alpha1 --kind Wordpress
 
 Created helm-charts/wordpress
 Generating RBAC rules
@@ -64,11 +64,11 @@ WARN[0011] The RBAC rules generated in config/rbac/role.yaml are based on the ch
 
 The `operator-sdk init` command initializes a new Helm operator project generating the following artefacts:
 
-- a helm-charts directory with the chart(s) to build releases from
-- a watches.yaml file that defines the mapping between your API and a Helm chart
-- a PROJECT file with the domain and project layout configuration
-- a Makefile to build the project
-- a Kustomization.yaml for customizing manifests
+- a `helm-charts` directory with the chart(s) to build releases from
+- a `watches.yaml` file that defines the mapping between your API and a Helm chart
+- a `PROJECT` file with the domain and project layout configuration
+- a `Makefile` to build the project
+- a `Kustomization.yaml` for customizing manifests
 - a Patch file for customizing image for manager manifests
 - a Patch file for enabling prometheus metrics
 
@@ -77,18 +77,18 @@ The `operator-sdk init` command initializes a new Helm operator project generati
 1. Build and push the image:
 
 ```bash
-$ export USERNAME=<docker-registry>
+$ export USERNAME=<docker-registry-userid>
 
-$ make docker-build docker-push IMG=docker.io/$USERNAME/wordpress-operator:v1.0.0 
+$ make docker-build docker-push IMG=docker.io/$USERNAME/wordpress-operator:v0.0.1 
 [...]
 ```
 
 2. Deploy the operator:
 
 ```bash
-$ make deploy IMG=docker.io/$USERNAME/wordpress-operator:v1.0.0
+$ make deploy IMG=docker.io/$USERNAME/wordpress-operator:v0.0.1
 
-cd config/manager && projects/wordpress-operator/bin/kustomize edit set image controller=docker.io/user/wordpress-operator:v1.0.0
+cd config/manager && projects/wordpress-operator/bin/kustomize edit set image controller=docker.io/user/wordpress-operator:v0.0.1
 projects/wordpress-operator/bin/kustomize build config/default | kubectl apply -f -
 namespace/wordpress-operator-system unchanged
 customresourcedefinition.apiextensions.k8s.io/wordpresses.helm-chart.example.com created
@@ -123,7 +123,7 @@ wordpress-operator-controller-manager   1/1     1            1           16m
 - Copy the generated CR manifest:
 
 ```bash
-$ cp config/samples/helm-chart_v1_wordpress.yaml config/samples/wordpress-demo.yaml
+$ cp config/samples/helm-chart_v1alpha1_wordpress.yaml config/samples/wordpress-demo.yaml
 ```
 
 - Change the WordPress chart release name from the default generated name:
@@ -195,7 +195,7 @@ wordpress-demo	wordpress-demo	1       	2021-02-12 18:30:19.542550642 +0000 UTC	d
 
 ## Upgrade WordPress
 
-1. Let's stops your WordPress web server `wordpress-demo`:
+1. Let's stop your WordPress web server `wordpress-demo`:
 
 - Set `replicaCount` to `0`
 
@@ -310,14 +310,14 @@ $ kubectl patch storageclass ibmc-file-<name> -p '{"metadata": {"annotations":{"
 
 - If your cluster uses additional security on top of vanilla Kubernetes, you may then need to perform some configuration prior to deploying the chart.
 
-For [RedHat OpenShift](https://www.openshift.com/), you will need to assign the `anyuid` [Security Context Constraint (SCC)](https://www.openshift.com/blog/managing-sccs-in-openshift) to the `default` ServiceAccount in the `wordpress-demo` namespace (or whatever ServiceAccount and namespace you use to deploy the chart). The command is as follows:
+For [RedHat OpenShift](https://www.openshift.com/), you will need to assign the `nonroot` [Security Context Constraint (SCC)](https://www.openshift.com/blog/managing-sccs-in-openshift) to the `default` ServiceAccount in the `wordpress-demo` namespace (or whatever ServiceAccount and namespace you use to deploy the chart). The command is as follows:
 
 ```bash
-$ oc adm policy add-scc-to-user anyuid -z default -n wordpress-demo
-clusterrole.rbac.authorization.k8s.io/system:openshift:scc:anyuid added: "default"
+$ oc adm policy add-scc-to-user nonroot -z default -n wordpress-demo
+clusterrole.rbac.authorization.k8s.io/system:openshift:scc:nonroot added: "default"
 ```
 
-> Note: As the chart also deploys MariaDB, if you configured it to use the `default` ServiceAccount (same as WordPress) then the above command provides permissions also for MariaDB. If it is a different ServiceAccount then in advance of deploying the chart: you need to create that ServiceAccount, set the `anyuid` SCC to it and set the name of the ServiceAccount to `mariadb.serviceAccount.name` in the CR/values file.
+> Note: As the chart also deploys MariaDB, if you configured it to use the `default` ServiceAccount (same as WordPress) then the above command provides permissions also for MariaDB. If it is a different ServiceAccount then in advance of deploying the chart: you need to create that ServiceAccount, set the `nonroot` SCC to it and set the name of the ServiceAccount to `mariadb.serviceAccount.name` in the CR/values file.
 
 > Note: You may want to use a more restrictive SCC by creating a custom SCC where you define the range for User ID (UID) and fsGroup etc. The IDs used by the chart are defined in the CR/values file. The alternative is the default `restrictive` SCC which uses dynamic ID ranges and the IDs  of the chart may not be in that range.
 
