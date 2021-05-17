@@ -6,15 +6,19 @@ This document covers how to prepare and Red Hat certify your container image for
 
 This is a base checklist of requirements for an image to be compatabile prior to certification.
 
-1. The Base image must be (or must be based on) a supported Red Hat image, such as Red Hat Enterprise Linux or [Red Hat Universal Base Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/containers-with-red-hat-universal-base-image-ubi)
+1. The Base image must be (or must be based on) a supported Red Hat image, such as Red Hat Enterprise Linux or [Red Hat Universal Base Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/containers-with-red-hat-universal-base-image-ubi).
 
-2. Confirm contents (images and packages) are from a trusted source and are maintained with CVE updates
+2. Confirm contents (images and packages) are from a trusted source and are maintained with CVE updates.
 
-3. All contents (images and packages) should use the latest version unless a valid reason for not doing so
+3. All contents (images and packages) should use the latest version unless a valid reason for not doing so.
 
-4. Image runs as non-root
+4. Container image runs as non-root. Refer to [How to make a non-root based container](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/how_to_make_a_nonroot_container.md) for more details. Don't use `USER nonroot:nonroot` with UBI base image as it doesn't exist for that image.
 
-5. Valid licensing for image, refer to [Licenses Requirements](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/technical-prerequisites#licenses-requirements) for more details
+5. Uncompressed image should have less than 40 layers.
+
+6. Valid licensing for image, refer to [Licenses Requirements](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/technical-prerequisites#licenses-requirements) for more details.
+
+7. Product overview for the certified image, as well as other relevant documentation should be provided.
 
 ## Certification process
 
@@ -48,6 +52,8 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 ENTRYPOINT ["/manager"]
 ```
+
+> Note: The use of `USER 1001` above means a UID (User Identifier) of 1001. This UID is arbitrary on OpenShift as it will launch the container with a random UID. No GID( Group Identifier) is specified above and OpenShift will use a GID of 0 (root). This doesn't give any special permissions like UID of 0 (root), but will allow the setting of static file/directory permissions within the container image since all containers launch as GID 0 in OpenShift.
 
 3. Add license file:
 

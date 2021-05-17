@@ -4,7 +4,7 @@ This document covers how to prepare and Red Hat certify your Helm operator for t
 
 ## Prerequisite: Helm chart checklist
 
-This is a checklist of requirements for a Helm chart to be compatabile for certification.
+This is a checklist of requirements for a Helm chart to be compatabile prior to certification.
 
 > Note: This check list is based off the checklist for [adding a Helm chart to the RedHat chart repository](https://github.com/redhat-developer/redhat-helm-charts/wiki/Adding-a-New-Chart) and [Operator Best Practises](https://operator-framework.github.io/community-operators/best-practices/).
 
@@ -14,15 +14,23 @@ This is a checklist of requirements for a Helm chart to be compatabile for certi
 
 3. README which describes configuration, instructions etc.
 
-4. The Base image must be (or must be based on) a supported Red Hat image, such as Red Hat Enterprise Linux or [Red Hat Universal Base Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/containers-with-red-hat-universal-base-image-ubi)
+4. The Base image must be (or must be based on) a supported Red Hat image, such as Red Hat Enterprise Linux or [Red Hat Universal Base Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/containers-with-red-hat-universal-base-image-ubi).
 
-5. Container images (parent and all dependent charts) run as non root.
+5. Confirm contents (images and packages) are from a trusted source and are maintained with CVE updates.
 
-6. Chart can be installed on the latest OpenShift version using the most restrictive [Security Context Constraint (SCC)](https://www.openshift.com/blog/managing-sccs-in-openshift) where possible.
+6. All contents (images and packages) should use the latest version unless a valid reason for not doing so.
 
-> Note: `nonroot` SCC required when UID/GID are specified.
+7. Container images (parent and all dependent charts) run as non root. Refer to [How to make a non-root based container](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/how_to_make_a_nonroot_container.md) for more details. Don't use `USER nonroot:nonroot` with UBI base image as it doesn't exist for that image.
+
+8. Uncompressed container images should have less than 40 layers.
+
+9. Chart can be installed on the latest OpenShift version using the most restrictive [Security Context Constraint (SCC)](https://www.openshift.com/blog/managing-sccs-in-openshift) where possible.
+
+> Note: The UID is arbitrary on OpenShift as it will launch the container with a random UID. OpenShift will use a GID of 0 (root). This doesn't give any special permissions like UID of 0 (root), but will allow the setting of static file/directory permissions within the container image since all containers launch as GID 0 in OpenShift. May need to use `nonroot` SCC when UID/GID are specified.
   
-7. Appropriate licensing for chart, dependencies and images. Refer to [Licenses Requirements](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/technical-prerequisites#licenses-requirements) for more details.
+10. Appropriate licensing for chart, dependencies and images. Refer to [Licenses Requirements](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/technical-prerequisites#licenses-requirements) for more details.
+
+11. Product overview for the certified image, as well as other relevant documentation should be provided.
 
 ## Certification Process
 
@@ -68,8 +76,7 @@ The steps for certification are as follows:
 - Add the following labels to `Dockerfile`:
 
 ```yaml
-# Build the manager binary
-FROM quay.io/operator-framework/helm-operator:v1.3.2
+FROM quay.io/operator-framework/helm-operator:v1.7.1
 
 ### Required Labels for Red Hat build service and scanner
 LABEL name="Wordpress Operator" \
@@ -85,6 +92,8 @@ COPY watches.yaml ${HOME}/watches.yaml
 COPY helm-charts  ${HOME}/helm-charts
 WORKDIR ${HOME}
 ```
+
+> Note: It is recommended to use the latest version of the `helm-operator` image from the Operator SDK where possible. Updates to the image can include security fixes which maybe necessary for passing vulnerability tests during image scanning.
 
 2. Add license file:
 
@@ -105,8 +114,7 @@ $ cd ..
 - Update `Dockerfile` to copy the license directory:
 
 ```yaml
-# Build the manager binary
-FROM quay.io/operator-framework/helm-operator:v1.3.2
+FROM quay.io/operator-framework/helm-operator:v1.7.1
 
 ### Required Labels for Red Hat build service and scanner
 LABEL name="Wordpress Operator" \
