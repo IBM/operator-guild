@@ -96,7 +96,7 @@ ENTRYPOINT ["/manager"]
 4. Build and push image to image registry:
 
 ```bash
-$ docker build -t example-app:v0.0.1
+$ docker build -t example-app:v0.0.1 .
 
 $ docker push YOUR-USER-NAME/example-app:v0.0.1
 ```
