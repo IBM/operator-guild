@@ -2,11 +2,9 @@
 
 This document covers how to prepare and Red Hat certify your Helm operator for the goal of being added to [Red Hat Marketplace](https://marketplace.redhat.com/en-us).
 
-## Prerequisite: Helm chart checklist
+## Helm chart checklist
 
-This is a checklist of requirements for a Helm chart to be compatabile prior to certification.
-
-> Note: This check list is based off the checklist for [adding a Helm chart to the RedHat chart repository](https://github.com/redhat-developer/redhat-helm-charts/wiki/Adding-a-New-Chart) and [Operator Best Practises](https://operator-framework.github.io/community-operators/best-practices/).
+This is a base checklist of requirements for a Helm chart to be compatabile prior to certification.
 
 1. Chart and dependencies are Helm 3 compatabile.
 
@@ -32,50 +30,27 @@ This is a checklist of requirements for a Helm chart to be compatabile prior to 
 
 11. Product overview for the certified image, as well as other relevant documentation should be provided.
 
-## Certification Process
+## Certification process
 
-The certification of an operator as shown in the [Certification Workflow](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/certification-workflow) is broken up into 2 stages as follows:
+### Prerequisites
 
-1. Operator image certification process:
+1. Follow the prerequisite steps as mentioned in the [Program Prerequisites](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/prerequisites). These prerequisites are part of [Certification Workflow](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/certification-workflow).
+2. All container images used by the Helm operator must also be certified. Refer to [How to Red Hat certify a container image](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/image_redhat_certification.md) for more details on how to do this.
 
-- Create a `Container Image` project in https://connect.redhat.com/projects
-- Update operator files for certification
-- Build and test the operator image
-- Upload the operator image to `scan.connect.redhat.com`
+### Certification steps
 
-2. [Operator bundle](https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md) image certification process:
+After you satisfy all the [Prerequisites](#prerequisites), follow the steps below for certification:
 
-- Create an `Operator Bundle Image` project in https://connect.redhat.com/projects
-- Bundle the operator
-- Update operator bundle files for certification
-- Build and test the bundle image
-- Upload the operator bundle image to `scan.connect.redhat.com`
+> Note: The operator example used is from [How to create an operator using an existing Helm chart](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/existing_helm_chart_operator.md). This example uses the [Operator SDK](https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/#olm-deployment) to simplify the process. This example needs to be tested on Redhat [OpenShift](https://www.openshift.com/) due to changes of the operator for certification.
 
-The next sub-section walks you though the certification process using the example in [How to create an operator using an existing Helm chart](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/existing_helm_chart_operator.md).
+1. Create a `Container Application` project - Follow the steps in [Certify your Operator Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/certify-your-operator/creating-an-operator-project) and stop before [Uploading your Operator Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/certify-your-operator/creating-an-operator-project/image-upload).
 
-### Certification Steps
-
-The steps for certification are as follows:
-
-1. Follow the steps in [Partner Guide for OpenShift Operator and Container Certification](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/) until "PROGRAM ON-BOARDING" is complete. This means last step is [Request Container Zone access](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/request-container-zone-access).
-
-2. Follow the steps in [Certify your Operator Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/certify-your-operator/creating-an-operator-project) and stop before [Uploading your Operator Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/certify-your-operator/creating-an-operator-project/image-upload).
-
-3. Follow the steps in [Operator image certification](#operator-image-certification-steps). The operator image is certified following success in those steps.
-
-4. Follow the steps in [Certify your Operator Bundle Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/certify-your-operator/certify-your-operator-bundle-image) until [Uploading your Operator Bundle Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/certify-your-operator/certify-your-operator-bundle-image/uploading-your-operator-bundle-image).
-
-5. Follow the steps in [Operator bundle image certification](#operator-bundle-image-certification-steps). The operator bundle image is now certified.
-
-#### Operator image certification steps
-
-> Note: This example uses the [Operator SDK](https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/#olm-deployment) to simplify the process. It is based on the example in [How to create an operator using an existing Helm chart](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/existing_helm_chart_operator.md) and steps 1 and 2 in the [Certification Steps](#certification-steps) above. They should be performed prior to the following steps.
-
-1. Add labels for Red Hat build service and scanner:
+2. Update operator files for certification - Add labels for Red Hat build service and scanner:
 
 - Add the following labels to `Dockerfile`:
 
 ```yaml
+# Build the manager binary
 FROM quay.io/operator-framework/helm-operator:v1.7.1
 
 ### Required Labels for Red Hat build service and scanner
@@ -95,7 +70,7 @@ WORKDIR ${HOME}
 
 > Note: It is recommended to use the latest version of the `helm-operator` image from the Operator SDK where possible. Updates to the image can include security fixes which maybe necessary for passing vulnerability tests during image scanning.
 
-2. Add license file:
+3. Update operator files for certification - Add license file:
 
 - Add an example license file to the project:
 
@@ -114,6 +89,7 @@ $ cd ..
 - Update `Dockerfile` to copy the license directory:
 
 ```yaml
+# Build the manager binary
 FROM quay.io/operator-framework/helm-operator:v1.7.1
 
 ### Required Labels for Red Hat build service and scanner
@@ -134,7 +110,7 @@ COPY helm-charts  ${HOME}/helm-charts
 WORKDIR ${HOME}
 ```
 
-3. Use certified image for RBAC proxy:
+4. Update operator files for certification - Use certified image for RBAC proxy:
 
 > Note: This image is ONLY available on Redhat [OpenShift](https://www.openshift.com/) and therefore needs to be tested on it.
 
@@ -171,24 +147,86 @@ spec:
         - "--leader-election-id=wordpress-operator"
 ```
 
-4. Build and test the operator:
+5. Update operator files for certification - Enable single image variable
+
+- Add a new single image variable for any images that are referenced with multiple image variables.
+
+For example, in `helm-charts/wordpress/values.yaml`, you would comment or remove `registry`, `repository` and `tag` variables, and replace with one variable only as follows:
+
+```yaml
+[...]
+image:
+  #registry: docker.io
+  #repository: bitnami/wordpress
+  #tag: 5.7.0-debian-10-r8
+  path: docker.io/bitnami/wordpress:5.7.0-debian-10-r8
+[...]
+```
+
+> Note: You may need to retain the `tag` variable if it is referenced individually in the templates (i.e. not as part of 3 variables for image path)
+
+- This new variable needa to be substituted everywhere the original variables occur in the templates. This may also necessitate changes in underlying common library charts.
+
+For example, in `helm-charts/wordpress/templates/_helpers.tpl` a change would be as follows:
+
+```yaml
+[...]
+{{- define "wordpress.image" -}}
+{{- include "common.images.image" (dict "imageRoot" .Values.image.path "global" .Values.global) -}}
+{{- end -}}
+[...]
+```
+
+- Add an override image variable (e.g. `RELATED_IMAGE_WORDPRESS`) to the `watches.yaml` file as follows:
+
+```yaml
+[...]
+chart: helm-charts/wordpress
+  overrideValues:    
+    image.image: $RELATED_IMAGE_WORDPRESS
+# +kubebuilder:scaffold:watch
+```
+
+The variable is defined in `config/manager/manager.yaml` as follows:
+
+```yaml
+[...]
+spec:
+  containers:
+  - image: controller:latest
+    args:
+    - "--enable-leader-election"
+    - "--leader-election-id=wordpress-operator"
+    env:
+    - name: RELATED_IMAGE_WORDPRESS
+      value: docker.io/bitnami/wordpress:5.7.0-debian-10-r8
+[...]
+```
+
+- Making changes for the single image variable dependens on the chart and its dependencies. You will need to metliciously go through the image variables and where they are referenced in the templates. Refer to [Using a Single Image Variable](https://redhat-connect.gitbook.io/certified-operator-guide/helm-operators/building-a-helm-operator/using-a-single-image-variable) for more details.
+
+> Note: Trying to show all changes for the WordPress chart is not feasible as an example in this doc. You can still perform the certification for this example without the single image variable.
+
+6. Build and test the operator:
 
 > Note: Need to test on RedHat [OpenShift](https://www.openshift.com/) due to certified image for RBAC proxy.
 
 - Follow the steps in [Deploy the operator](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/existing_helm_chart_operator.md#deploy-the-operator) and [Deploy WordPress](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/existing_helm_chart_operator.md#deploy-wordpress).
 
-5. Cleanup the operator:
+7. Build and test the operator - Cleanup the operator:
 
 - Follow the steps in [Clean up](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/existing_helm_chart_operator.md#clean-up).
 
-6. Upload the image to the Red Hat project registry:
+8. Upload the image to the Red Hat project registry:
 
 ```bash
+# Use Registry Key from https://connect.redhat.com/project/<project_id>/images/upload-image as the password when prompted from the 'docker login' command below.
+# Note: On Mac, it doesn't seem to accept the password at the prompt. Use the --password-stdin flag instead.
+# Refer to the Docker docs for more details:
+# https://docs.docker.com/engine/reference/commandline/login/provide-a-password-using-stdin
+
 # Login to the RH registry
 $ docker login -u unused scan.connect.redhat.com
-
-# Use Registry Key from https://connect.redhat.com/project/<project_id>/images/upload-image
-# as password. Note: Doesn't seem to accept password on Mac.
 
 # Get the ID of the WordPress image
 $ docker images
@@ -200,23 +238,25 @@ $ docker tag <wordpress-operator_image_id> scan.connect.redhat.com/<ospid-id>/wo
 $ docker push scan.connect.redhat.com/<ospid-id>/wordpress-operator:v0.0.1
 ```
 
-7. Check image has been uploaded and scanned:
+9. Check image has been uploaded and scanned:
 
-- GoTo `https://connect.redhat.com/project/<project_id>/images`
+- Go to `https://connect.redhat.com/project/<project_id>/images`
 
 - It might take a while for the image to appear. You then need to wait for the certification process to finish.
 
 - If "certification test" passed then continue to next step. Otherwise, check the scan logs for errors and update the image accordingly.
 
-8. Go back to "Container Checklist" (https://connect.redhat.com/project/<project_id>/checklist) and finish any items that are not complete. The image is now certified.
+10. Go back to "Checklist" (https://connect.redhat.com/project/<project_id>/checklist) and finish any items that are not complete. The image is now certified.
 
-#### Operator bundle image certification steps
+11. Create an `Operator Bundle Image` project - Follow the steps in [Certify your Operator Bundle Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/certify-your-operator/certify-your-operator-bundle-image) until [Uploading your Operator Bundle Image](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/certify-your-operator/certify-your-operator-bundle-image/uploading-your-operator-bundle-image).
 
-> Note: This example uses the [Operator SDK](https://sdk.operatorframework.io/docs/building-operators/helm/quickstart/#olm-deployment) to simplify the process and [Operator Lifecycle Manager (OLM)](https://github.com/operator-framework/operator-lifecycle-manager/). It is dependent on [Operator image certification](#operator-image-certification-steps) and step 3 in [Certification Steps](#certification-steps) above. They should be performed prior to the following steps.
-
-1. Create a bundle for your operator release:
+12. Create a bundle for your operator release:
 
 ```bash
+$ export USERNAME=<docker-registry-userid>
+
+$ export OPERATOR_IMG=docker.io/$USERNAME/wordpress-operator:v0.0.1
+ 
 $ make bundle IMG=$OPERATOR_IMG
 
 operator-sdk generate kustomize manifests -q
@@ -265,7 +305,7 @@ $ tree config/manifests
 
 config/manifests
 ├── bases
-│   └── wordpress-operator.clusterserviceversion.yaml
+│   └── wordpress-operator.clusterserviceversion.yaml
 └── kustomization.yaml
 
 1 directory, 2 files
@@ -274,12 +314,12 @@ $ tree bundle
 
 bundle
 ├── manifests
-│   ├── helm-chart.example.com_wordpresses.yaml
-│   ├── wordpress-operator-controller-manager-metrics-service_v1_service.yaml
-│   ├── wordpress-operator-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml
-│   └── wordpress-operator.clusterserviceversion.yaml
+│   ├── helm-chart.example.com_wordpresses.yaml
+│   ├── wordpress-operator-controller-manager-metrics-service_v1_service.yaml
+│   ├── wordpress-operator-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml
+│   └── wordpress-operator.clusterserviceversion.yaml
 ├── metadata
-│   └── annotations.yaml
+│   └── annotations.yaml
 └── tests
     └── scorecard
         └── config.yaml
@@ -287,7 +327,7 @@ bundle
 4 directories, 6 files
 ```
 
-2. Update bundle files for certification:
+13. Update bundle files for certification:
 
 - Update `bundle/manifests/wordpress-operator.clusterserviceversion.yaml` by:
 
@@ -309,11 +349,13 @@ LABEL com.redhat.openshift.versions="v4.6"
 LABEL com.redhat.delivery.operator.bundle=true
 ```
 
-3. Build the bundle image and push to registry:
+14. Build the bundle image and push to registry:
 
 - Build the bundle image:
 
 ```bash
+$ export USERNAME=<docker-registry-userid>
+
 $ export BUNDLE_IMG=docker.io/$USERNAME/wordpress-operator-bundle:v0.0.1 
 
 $ make bundle-build IMG=$BUNDLE_IMG
@@ -384,7 +426,7 @@ df1b6956e025: Pushed
 v1.0.0: digest: sha256:33b97cd53a809d4e706c3b0987bcfa36b50bc48facbdbc6e981b0aaf8d07c34a size: 939
 ```
 
-4. Deploy and test the operator:
+15. Deploy and test the operator:
 
 > Note: For more details and manual steps on testing, check out [Testing your Operator with Operator Framework](https://github.com/operator-framework/community-operators/blob/master/docs/testing-operators.md#testing-your-operator-with-operator-framework)
 
@@ -509,7 +551,7 @@ wordpress-operator-controller-manager   1/1     1            1           13m
 
 - [Deploy an instance of the WordPress chart](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/existing_helm_chart_operator.md#deploy-wordpress) to validate that the operator is working as expected.
 
-5. Cleanup the operator:
+16. Test - Cleanup the operator:
 
 First the deployed chart:
 
@@ -542,9 +584,14 @@ clusterserviceversion.operators.coreos.com "wordpress-operator.v0.0.1" deleted
 $ make undeploy
 ```
 
-6. Upload the image to the Red Hat project registry:
+17. Upload the image to the Red Hat project registry:
 
 ```bash
+# Use Registry Key from https://connect.redhat.com/project/<project_id>/images/upload-image as the password when prompted from the 'docker login' command below.
+# Note: On Mac, it doesn't seem to accept the password at the prompt. Use the --password-stdin flag instead.
+# Refer to the Docker docs for more details:
+# https://docs.docker.com/engine/reference/commandline/login/provide-a-password-using-stdin
+
 # Login to the RH registry
 $ docker login -u unused scan.connect.redhat.com
 
@@ -558,15 +605,15 @@ $ docker tag <wordpress-operator_image_id> scan.connect.redhat.com/<ospid-id>/wo
 $ docker push scan.connect.redhat.com/<ospid-id>/wordpress-operator-bundle:v0.0.1
 ```
 
-7. Check image has been uploaded and scanned:
+18. Check image has been uploaded and scanned:
 
-- GoTo `https://connect.redhat.com/project/<project_id>/images`
+- Go to `https://connect.redhat.com/project/<project_id>/images`
 
 - It might take a while for the image to appear. You then need to wait for the certification process to finish.
 
 - If "certification test" passed then continue to next step. Otherwise, check the scan logs for errors and update the image accordingly.
 
-8. Go back to "Container Checklist" (https://connect.redhat.com/project/<project_id>/checklist) and finish any items that are not complete. The image is now certified.
+19. Go back to "Checklist" (https://connect.redhat.com/project/<project_id>/checklist) and finish any items that are not complete. The image is now certified.
 
 ## References
 
