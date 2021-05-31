@@ -2,6 +2,8 @@
 
 This document covers how to prepare and Red Hat certify your Helm operator for the goal of being added to [Red Hat Marketplace](https://marketplace.redhat.com/en-us).
 
+> Note: It is recommended that you own and maintain all charts and images that will be managed by the operator. Third-party or community owned content can be difficult to modify for compliancy.
+
 ## Helm chart checklist
 
 This is a base checklist of requirements for a Helm chart to be compatabile prior to certification.
@@ -20,11 +22,13 @@ This is a base checklist of requirements for a Helm chart to be compatabile prio
 
 7. Container images (parent and all dependent charts) run as non root. Refer to [How to make a non-root based container](https://github.com/IBM/operator-guild/blob/main/docs/content/howto/how_to_make_a_nonroot_container.md) for more details. Don't use `USER nonroot:nonroot` with UBI base image as it doesn't exist for that image.
 
+> Note: The use of `USER 1001` means a UID (User Identifier) of 1001. This UID is arbitrary on OpenShift as it will launch the container with a random UID. No GID (Group Identifier) is specified and OpenShift will use a GID of 0 (root). This doesn't give any special permissions like UID of 0 (root), but will allow the setting of static file/directory permissions within the container image since all containers launch as GID 0 in OpenShift.
+
 8. Uncompressed container images should have less than 40 layers.
 
 9. Chart can be installed on the latest OpenShift version using the most restrictive [Security Context Constraint (SCC)](https://www.openshift.com/blog/managing-sccs-in-openshift) where possible.
 
-> Note: The UID is arbitrary on OpenShift as it will launch the container with a random UID. OpenShift will use a GID of 0 (root). This doesn't give any special permissions like UID of 0 (root), but will allow the setting of static file/directory permissions within the container image since all containers launch as GID 0 in OpenShift. May need to use `nonroot` SCC when UID/GID are specified.
+> `nonroot` SCC maybe required when installing a Helm chart.
   
 10. Appropriate licensing for chart, dependencies and images. Refer to [Licenses Requirements](https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/program-on-boarding/technical-prerequisites#licenses-requirements) for more details.
 
